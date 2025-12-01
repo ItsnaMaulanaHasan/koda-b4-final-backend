@@ -8,6 +8,7 @@ package main
 
 import (
 	"backend-koda-shortlink/internal/config"
+	"backend-koda-shortlink/internal/database"
 	"backend-koda-shortlink/internal/middlewares"
 	"backend-koda-shortlink/pkg/response"
 	"net/http"
@@ -21,7 +22,7 @@ import (
 
 func main() {
 	godotenv.Load()
-	config.InitDatabase()
+	database.InitDatabase()
 	config.InitRedis()
 
 	r := gin.Default()

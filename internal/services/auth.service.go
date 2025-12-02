@@ -10,26 +10,19 @@ import (
 	"github.com/matthewhartstonge/argon2"
 )
 
-type AuthService interface {
-	Register(ctx context.Context, req *models.RegisterRequest) (*models.User, error)
-	Login(ctx context.Context, req *models.LoginRequest, ipAddress, userAgent string) (*models.LoginResponse, error)
-	RefreshToken(ctx context.Context, req *models.RefreshTokenRequest) (string, error)
-	Logout(ctx context.Context, req *models.LogoutRequest) error
+type AuthService struct {
+	userRepo    *repository.UserRepository
+	sessionRepo *repository.SessionRepository
 }
 
-type authService struct {
-	userRepo    repository.UserRepository
-	sessionRepo repository.SessionRepository
-}
-
-func NewAuthService(userRepo repository.UserRepository, sessionRepo repository.SessionRepository) AuthService {
-	return &authService{
+func NewAuthService(userRepo *repository.UserRepository, sessionRepo *repository.SessionRepository) *AuthService {
+	return &AuthService{
 		userRepo:    userRepo,
 		sessionRepo: sessionRepo,
 	}
 }
 
-func (s *authService) Register(ctx context.Context, req *models.RegisterRequest) (*models.User, error) {
+func (s *AuthService) Register(ctx context.Context, req *models.RegisterRequest) (*models.User, error) {
 	exists, err := s.userRepo.EmailExists(ctx, req.Email)
 	if err != nil {
 		return nil, err
@@ -62,7 +55,7 @@ func (s *authService) Register(ctx context.Context, req *models.RegisterRequest)
 	return user, nil
 }
 
-func (s *authService) Login(ctx context.Context, req *models.LoginRequest, ipAddress, userAgent string) (*models.LoginResponse, error) {
+func (s *AuthService) Login(ctx context.Context, req *models.LoginRequest, ipAddress, userAgent string) (*models.LoginResponse, error) {
 	user, err := s.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, err
@@ -110,7 +103,7 @@ func (s *authService) Login(ctx context.Context, req *models.LoginRequest, ipAdd
 	}, nil
 }
 
-func (s *authService) RefreshToken(ctx context.Context, req *models.RefreshTokenRequest) (string, error) {
+func (s *AuthService) RefreshToken(ctx context.Context, req *models.RefreshTokenRequest) (string, error) {
 	claims, err := utils.VerifyRefreshToken(req.RefreshToken)
 	if err != nil {
 		return "", errors.New("invalid or expired refresh token")
@@ -129,6 +122,6 @@ func (s *authService) RefreshToken(ctx context.Context, req *models.RefreshToken
 	return accessToken, nil
 }
 
-func (s *authService) Logout(ctx context.Context, req *models.LogoutRequest) error {
+func (s *AuthService) Logout(ctx context.Context, req *models.LogoutRequest) error {
 	return s.sessionRepo.Invalidate(ctx, req.RefreshToken)
 }

@@ -66,7 +66,7 @@ func VerifyAccessToken(tokenString string) (*UserPayload, error) {
 func VerifyRefreshToken(tokenString string) (*UserPayload, error) {
 	secretKey := []byte(os.Getenv("REFRESH_SECRET"))
 
-	token, err := jwt.ParseWithClaims(tokenString, &UserPayload{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &UserPayload{}, func(token *jwt.Token) (any, error) {
 		return secretKey, nil
 	})
 

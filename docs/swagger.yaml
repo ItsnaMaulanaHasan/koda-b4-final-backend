@@ -88,6 +88,17 @@ definitions:
         example: true
         type: boolean
     type: object
+  services.DashboardStats:
+    properties:
+      avgClickRate:
+        format: float64
+        type: number
+      last7DaysStat: {}
+      totalLinks:
+        type: integer
+      totalVisits:
+        type: integer
+    type: object
 info:
   contact: {}
   description: Dokumentasi REST API menggunakan Gin dan Swagger
@@ -259,6 +270,32 @@ paths:
       summary: Register new user
       tags:
       - auth
+  /dashboard/stats:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve user-specific statistics for dashboard overview
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseSuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/services.DashboardStats'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Get dashboard statistics
+      tags:
+      - dashboard
   /links:
     get:
       consumes:

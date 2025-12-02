@@ -8,16 +8,24 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"net"
+	"net/http"
 	"strings"
 	"time"
+
+	"github.com/mssola/user_agent"
 )
 
 type ShortLinkService struct {
-	repo *repository.ShortLinkRepository
+	shortLinkRepo *repository.ShortLinkRepository
+	clickRepo     *repository.ClickRepository
 }
 
-func NewShortLinkService(repo *repository.ShortLinkRepository) *ShortLinkService {
-	return &ShortLinkService{repo: repo}
+func NewShortLinkService(shortLinkRepo *repository.ShortLinkRepository, clickRepo *repository.ClickRepository) *ShortLinkService {
+	return &ShortLinkService{
+		shortLinkRepo: shortLinkRepo,
+		clickRepo:     clickRepo,
+	}
 }
 
 func (s *ShortLinkService) CreateShortLink(ctx context.Context, userID int, req *models.CreateShortLinkRequest) (*models.ShortLink, error) {
@@ -34,7 +42,7 @@ func (s *ShortLinkService) CreateShortLink(ctx context.Context, userID int, req 
 		UpdatedBy:   &userID,
 	}
 
-	err = s.repo.Create(ctx, link)
+	err = s.shortLinkRepo.Create(ctx, link)
 	if err != nil {
 		return nil, err
 	}
@@ -43,11 +51,11 @@ func (s *ShortLinkService) CreateShortLink(ctx context.Context, userID int, req 
 }
 
 func (s *ShortLinkService) GetUserLinks(ctx context.Context, userID int) ([]models.ShortLink, error) {
-	return s.repo.GetAllByUserID(ctx, userID)
+	return s.shortLinkRepo.GetAllByUserID(ctx, userID)
 }
 
 func (s *ShortLinkService) GetLinkByShortCode(ctx context.Context, shortCode string, userID int) (*models.ShortLink, error) {
-	link, err := s.repo.GetByShortCode(ctx, shortCode)
+	link, err := s.shortLinkRepo.GetByShortCode(ctx, shortCode)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +68,7 @@ func (s *ShortLinkService) GetLinkByShortCode(ctx context.Context, shortCode str
 }
 
 func (s *ShortLinkService) UpdateShortLink(ctx context.Context, shortCode string, userID int, req *models.UpdateShortLinkRequest) (*models.ShortLink, error) {
-	existing, err := s.repo.GetByShortCode(ctx, shortCode)
+	existing, err := s.shortLinkRepo.GetByShortCode(ctx, shortCode)
 	if err != nil {
 		return nil, err
 	}
@@ -80,16 +88,16 @@ func (s *ShortLinkService) UpdateShortLink(ctx context.Context, shortCode string
 		link.IsActive = *req.IsActive
 	}
 
-	err = s.repo.Update(ctx, shortCode, userID, link)
+	err = s.shortLinkRepo.Update(ctx, shortCode, userID, link)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.repo.GetByShortCode(ctx, shortCode)
+	return s.shortLinkRepo.GetByShortCode(ctx, shortCode)
 }
 
 func (s *ShortLinkService) DeleteShortLink(ctx context.Context, shortCode string, userID int) error {
-	existing, err := s.repo.GetByShortCode(ctx, shortCode)
+	existing, err := s.shortLinkRepo.GetByShortCode(ctx, shortCode)
 	if err != nil {
 		return err
 	}
@@ -97,14 +105,14 @@ func (s *ShortLinkService) DeleteShortLink(ctx context.Context, shortCode string
 		return errors.New("unauthorized access")
 	}
 
-	return s.repo.Delete(ctx, shortCode, userID)
+	return s.shortLinkRepo.Delete(ctx, shortCode, userID)
 }
 
 func (s *ShortLinkService) generateUniqueShortCode(ctx context.Context) (string, error) {
 	maxAttempts := 5
 	for range maxAttempts {
 		code := generateRandomCode(6)
-		exists, err := s.repo.CheckShortCodeExists(ctx, code)
+		exists, err := s.shortLinkRepo.CheckShortCodeExists(ctx, code)
 		if err != nil {
 			return "", err
 		}
@@ -137,7 +145,7 @@ func (s *ShortLinkService) ResolveShortCode(ctx context.Context, code string) (*
 		}, nil
 	}
 
-	link, err := s.repo.GetByShortCode(ctx, code)
+	link, err := s.shortLinkRepo.GetByShortCode(ctx, code)
 	if err != nil {
 		return nil, err
 	}
@@ -154,5 +162,38 @@ func (s *ShortLinkService) ResolveShortCode(ctx context.Context, code string) (*
 func (s *ShortLinkService) LogClick(code string) {
 	ctx := context.Background()
 
-	_ = s.repo.IncrementClick(ctx, code)
+	_ = s.shortLinkRepo.IncrementClick(ctx, code)
+}
+
+func (s *ShortLinkService) SaveClickAnalytics(req *http.Request, link *models.ShortLink) {
+	go func() {
+		ctx := context.Background()
+
+		ua := user_agent.New(req.UserAgent())
+		browser, _ := ua.Browser()
+
+		deviceType := "desktop"
+		if ua.Mobile() {
+			deviceType = "mobile"
+		}
+
+		ip := req.Header.Get("X-Forwarded-For")
+		if ip == "" {
+			ip, _, _ = net.SplitHostPort(req.RemoteAddr)
+		}
+
+		click := &models.Click{
+			ShortLinkID: link.ID,
+			IPAddress:   ip,
+			Referer:     req.Referer(),
+			UserAgent:   req.UserAgent(),
+			Country:     "",
+			City:        "",
+			DeviceType:  deviceType,
+			Browser:     browser,
+			OS:          ua.OS(),
+		}
+
+		_ = s.clickRepo.Insert(ctx, click)
+	}()
 }

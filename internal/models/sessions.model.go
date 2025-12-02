@@ -3,6 +3,7 @@ package models
 import (
 	"backend-koda-shortlink/internal/database"
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 )
@@ -21,12 +22,12 @@ type Session struct {
 	UpdatedAt    time.Time  `json:"updatedAt"`
 }
 
-func CreateSession(userId int, refreshToken string, expiredAt time.Time, ipAddress, userAgent string) error {
+func CreateSession(userId int, refreshToken string, expiredAt time.Time, ipAddress, userAgent string) (int, error) {
 	ctx := context.Background()
 	tx, err := database.DB.Begin(ctx)
 	if err != nil {
 		err = errors.New("failed to start database transaction")
-		return err
+		return 0, err
 	}
 	defer tx.Rollback(ctx)
 
@@ -40,22 +41,22 @@ func CreateSession(userId int, refreshToken string, expiredAt time.Time, ipAddre
 	err = tx.QueryRow(ctx, query, userId, refreshToken, expiredAt, ipAddress, userAgent).Scan(&sessionId)
 	if err != nil {
 		err = errors.New("internal server error while inserting new user")
-		return err
+		return 0, err
 	}
 
 	_, err = tx.Exec(ctx, `UPDATE sessions SET created_by = $1, updated_by = $1 WHERE id = $2`, userId, sessionId)
 	if err != nil {
 		err = errors.New("internal server error while update created_by and updated_by")
-		return err
+		return 0, err
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
 		err = errors.New("failed to commit transaction")
-		return err
+		return 0, err
 	}
 
-	return err
+	return sessionId, err
 }
 
 func GetSessionByRefreshToken(refreshToken string) (*Session, error) {
@@ -79,6 +80,25 @@ func GetSessionByRefreshToken(refreshToken string) (*Session, error) {
 	}
 
 	return &session, nil
+}
+
+func CheckSessionActive(sessionId int) (bool, error) {
+	var isActive bool
+	query := `
+		SELECT is_active 
+		FROM sessions 
+		WHERE id = $1 AND expired_at > NOW()
+	`
+
+	err := database.DB.QueryRow(context.Background(), query, sessionId).Scan(&isActive)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return isActive, nil
 }
 
 func InvalidateSession(userId int, refreshToken string) error {

@@ -7,23 +7,18 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type UserRepository interface {
-	Create(ctx context.Context, user *models.User) error
-	GetByEmail(ctx context.Context, email string) (*models.User, error)
-	GetById(ctx context.Context, id int) (*models.User, error)
-	EmailExists(ctx context.Context, email string) (bool, error)
-	UpdateCreatedByAndUpdatedBy(ctx context.Context, userId int) error
+type UserRepository struct {
+	db *pgxpool.Pool
 }
 
-type userRepository struct{}
-
-func NewUserRepository() UserRepository {
-	return &userRepository{}
+func NewUserRepository(db *pgxpool.Pool) *UserRepository {
+	return &UserRepository{db: db}
 }
 
-func (r *userRepository) Create(ctx context.Context, user *models.User) error {
+func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 	query := `
 		INSERT INTO users (fullname, email, password)
 		VALUES ($1, $2, $3)
@@ -41,7 +36,7 @@ func (r *userRepository) Create(ctx context.Context, user *models.User) error {
 	return err
 }
 
-func (r *userRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	query := `SELECT id, fullname, email, password FROM users WHERE email = $1`
 
 	rows, err := database.DB.Query(ctx, query, email)
@@ -61,7 +56,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*models.
 	return &user, nil
 }
 
-func (r *userRepository) GetById(ctx context.Context, id int) (*models.User, error) {
+func (r *UserRepository) GetById(ctx context.Context, id int) (*models.User, error) {
 	query := `SELECT id, fullname, email FROM users WHERE id = $1`
 
 	rows, err := database.DB.Query(ctx, query, id)
@@ -81,7 +76,7 @@ func (r *userRepository) GetById(ctx context.Context, id int) (*models.User, err
 	return &user, nil
 }
 
-func (r *userRepository) EmailExists(ctx context.Context, email string) (bool, error) {
+func (r *UserRepository) EmailExists(ctx context.Context, email string) (bool, error) {
 	var exists bool
 	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`
 
@@ -89,7 +84,7 @@ func (r *userRepository) EmailExists(ctx context.Context, email string) (bool, e
 	return exists, err
 }
 
-func (r *userRepository) UpdateCreatedByAndUpdatedBy(ctx context.Context, userId int) error {
+func (r *UserRepository) UpdateCreatedByAndUpdatedBy(ctx context.Context, userId int) error {
 	query := `UPDATE users SET created_by = $1, updated_by = $1 WHERE id = $1`
 	_, err := database.DB.Exec(ctx, query, userId)
 	return err

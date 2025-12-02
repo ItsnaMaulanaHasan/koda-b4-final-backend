@@ -7,25 +7,18 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type SessionRepository interface {
-	Create(ctx context.Context, session *models.Session) (int, error)
-	GetByRefreshToken(ctx context.Context, refreshToken string) (*models.Session, error)
-	CheckActive(ctx context.Context, sessionId int) (bool, error)
-	Invalidate(ctx context.Context, refreshToken string) error
-	InvalidateById(ctx context.Context, sessionId int) error
-	InvalidateAllByUserId(ctx context.Context, userId int) error
-	UpdateCreatedByAndUpdatedBy(ctx context.Context, userId int) error
+type SessionRepository struct {
+	db *pgxpool.Pool
 }
 
-type sessionRepository struct{}
-
-func NewSessionRepository() SessionRepository {
-	return &sessionRepository{}
+func NewSessionRepository(db *pgxpool.Pool) *SessionRepository {
+	return &SessionRepository{db: db}
 }
 
-func (r *sessionRepository) Create(ctx context.Context, session *models.Session) (int, error) {
+func (r *SessionRepository) Create(ctx context.Context, session *models.Session) (int, error) {
 	var sessionId int
 	query := `
 		INSERT INTO sessions (user_id, refresh_token, expired_at, ip_address, user_agent)
@@ -46,7 +39,7 @@ func (r *sessionRepository) Create(ctx context.Context, session *models.Session)
 	return sessionId, err
 }
 
-func (r *sessionRepository) GetByRefreshToken(ctx context.Context, refreshToken string) (*models.Session, error) {
+func (r *SessionRepository) GetByRefreshToken(ctx context.Context, refreshToken string) (*models.Session, error) {
 	query := `
 		SELECT id, user_id, refresh_token, expired_at, is_active
 		FROM sessions
@@ -70,7 +63,7 @@ func (r *sessionRepository) GetByRefreshToken(ctx context.Context, refreshToken 
 	return &session, nil
 }
 
-func (r *sessionRepository) CheckActive(ctx context.Context, sessionId int) (bool, error) {
+func (r *SessionRepository) CheckActive(ctx context.Context, sessionId int) (bool, error) {
 	var isActive bool
 	query := `SELECT is_active FROM sessions WHERE id = $1 AND expired_at > NOW()`
 
@@ -85,7 +78,7 @@ func (r *sessionRepository) CheckActive(ctx context.Context, sessionId int) (boo
 	return isActive, nil
 }
 
-func (r *sessionRepository) Invalidate(ctx context.Context, refreshToken string) error {
+func (r *SessionRepository) Invalidate(ctx context.Context, refreshToken string) error {
 	query := `
 		UPDATE sessions
 		SET is_active = false, logout_time = NOW(), updated_at = NOW()
@@ -96,7 +89,7 @@ func (r *sessionRepository) Invalidate(ctx context.Context, refreshToken string)
 	return err
 }
 
-func (r *sessionRepository) InvalidateById(ctx context.Context, sessionId int) error {
+func (r *SessionRepository) InvalidateById(ctx context.Context, sessionId int) error {
 	query := `
 		UPDATE sessions
 		SET is_active = false, logout_time = NOW(), updated_at = NOW()
@@ -107,7 +100,7 @@ func (r *sessionRepository) InvalidateById(ctx context.Context, sessionId int) e
 	return err
 }
 
-func (r *sessionRepository) InvalidateAllByUserId(ctx context.Context, userId int) error {
+func (r *SessionRepository) InvalidateAllByUserId(ctx context.Context, userId int) error {
 	query := `
 		UPDATE sessions
 		SET is_active = false, logout_time = NOW(), updated_at = NOW()
@@ -118,7 +111,7 @@ func (r *sessionRepository) InvalidateAllByUserId(ctx context.Context, userId in
 	return err
 }
 
-func (r *sessionRepository) UpdateCreatedByAndUpdatedBy(ctx context.Context, userId int) error {
+func (r *SessionRepository) UpdateCreatedByAndUpdatedBy(ctx context.Context, userId int) error {
 	query := `UPDATE sessions SET created_by = $1, updated_by = $1 WHERE id = $1`
 	_, err := database.DB.Exec(ctx, query, userId)
 	return err

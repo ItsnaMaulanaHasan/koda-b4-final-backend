@@ -1,6 +1,6 @@
 CREATE TABLE "short_links" (
     "id" serial PRIMARY KEY,
-    "user_id" int NOT NULL,
+    "user_id" int NULL,
     "short_code" varchar(20) UNIQUE NOT NULL,
     "original_url" text NOT NULL,
     "is_active" bool DEFAULT true,

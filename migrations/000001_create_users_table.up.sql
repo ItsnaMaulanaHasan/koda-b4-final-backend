@@ -1,5 +1,6 @@
 CREATE TABLE "users" (
     "id" serial PRIMARY KEY,
+    "profilePhoto" text,
     "fullname" varchar(255) NOT NULL,
     "email" varchar(255) UNIQUE NOT NULL,
     "password" text NOT NULL,

@@ -4,23 +4,29 @@ import "time"
 
 type ShortLink struct {
 	ID            int        `json:"id" db:"id"`
-	UserID        int        `json:"user_id" db:"user_id"`
-	ShortCode     string     `json:"short_code" db:"short_code"`
-	OriginalURL   string     `json:"original_url" db:"original_url"`
-	IsActive      bool       `json:"is_active" db:"is_active"`
-	ClickCount    int        `json:"click_count" db:"click_count"`
-	LastClickedAt *time.Time `json:"last_clicked_at,omitempty" db:"last_clicked_at"`
-	CreatedAt     time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at" db:"updated_at"`
-	CreatedBy     *int       `json:"created_by,omitempty" db:"created_by"`
-	UpdatedBy     *int       `json:"updated_by,omitempty" db:"updated_by"`
+	UserID        *int       `json:"userId" db:"user_id"`
+	ShortCode     string     `json:"shortCode" db:"short_code"`
+	OriginalURL   string     `json:"originalUrl" db:"original_url"`
+	IsActive      bool       `json:"isActive" db:"is_active"`
+	ClickCount    int        `json:"clickCount" db:"click_count"`
+	LastClickedAt *time.Time `json:"lastClicked_at,omitempty" db:"last_clicked_at"`
+	CreatedAt     time.Time  `json:"createdAt" db:"created_at"`
+	UpdatedAt     time.Time  `json:"updatedAt" db:"updated_at"`
+	CreatedBy     *int       `json:"createdBy,omitempty" db:"created_by"`
+	UpdatedBy     *int       `json:"updatedBy,omitempty" db:"updated_by"`
+}
+
+type ShortLinkResponse struct {
+	ShortCode   string `json:"shortCode"`
+	OriginalUrl string `json:"originalUrl"`
+	ShortUrl    string `json:"shortUrl"`
 }
 
 type CreateShortLinkRequest struct {
-	OriginalURL string `json:"original_url" validate:"required,url"`
+	OriginalURL string `json:"originalUrl" validate:"required,url"`
 }
 
 type UpdateShortLinkRequest struct {
-	OriginalURL *string `json:"original_url,omitempty" validate:"omitempty,url"`
-	IsActive    *bool   `json:"is_active,omitempty"`
+	OriginalURL *string `json:"originalUrl,omitempty" validate:"omitempty,url"`
+	IsActive    *bool   `json:"isActive,omitempty"`
 }

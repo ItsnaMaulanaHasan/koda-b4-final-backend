@@ -73,17 +73,6 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
-	// generate access token
-	accessToken, err := utils.GenerateAccessToken(user.Id)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, response.ResponseError{
-			Success: false,
-			Message: "Failed to generate access token. Please try again",
-			Error:   err.Error(),
-		})
-		return
-	}
-
 	// generate refresh token
 	refreshToken, expiresAt, err := utils.GenerateRefreshToken(user.Id)
 	if err != nil {
@@ -98,11 +87,22 @@ func Login(ctx *gin.Context) {
 	// save refresh token to db
 	ipAddress := ctx.ClientIP()
 	userAgent := ctx.Request.UserAgent()
-	err = models.CreateSession(user.Id, refreshToken, expiresAt, ipAddress, userAgent)
+	sessionId, err := models.CreateSession(user.Id, refreshToken, expiresAt, ipAddress, userAgent)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, response.ResponseError{
 			Success: false,
 			Message: "Failed to create session. Please try again",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	// generate access token
+	accessToken, err := utils.GenerateAccessToken(user.Id, sessionId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, response.ResponseError{
+			Success: false,
+			Message: "Failed to generate access token. Please try again",
 			Error:   err.Error(),
 		})
 		return
@@ -210,7 +210,7 @@ func Register(ctx *gin.Context) {
 // @Router       /auth/refresh [post]
 func RefreshToken(ctx *gin.Context) {
 	var body struct {
-		RefreshToken string `json:"refresh_token" binding:"required"`
+		RefreshToken string `json:"refreshToken" binding:"required"`
 	}
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -222,7 +222,6 @@ func RefreshToken(ctx *gin.Context) {
 		return
 	}
 
-	// Verify refresh token
 	claims, err := utils.VerifyRefreshToken(body.RefreshToken)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, response.ResponseError{
@@ -234,7 +233,7 @@ func RefreshToken(ctx *gin.Context) {
 	}
 
 	// check refresh token on db
-	_, err = models.GetSessionByRefreshToken(body.RefreshToken)
+	session, err := models.GetSessionByRefreshToken(body.RefreshToken)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, response.ResponseError{
 			Success: false,
@@ -245,7 +244,7 @@ func RefreshToken(ctx *gin.Context) {
 	}
 
 	// generate new access token
-	accessToken, err := utils.GenerateAccessToken(claims.Id)
+	accessToken, err := utils.GenerateAccessToken(claims.Id, session.Id)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, response.ResponseError{
 			Success: false,

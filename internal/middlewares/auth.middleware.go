@@ -1,10 +1,10 @@
 package middlewares
 
 import (
+	"backend-koda-shortlink/internal/models"
 	"backend-koda-shortlink/internal/utils"
 	"backend-koda-shortlink/pkg/response"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -24,29 +24,45 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		token, err := jwt.ParseWithClaims(tokenString, &utils.UserPayload{}, func(token *jwt.Token) (any, error) {
-			return []byte(os.Getenv("APP_SECRET")), nil
-		})
+		claims, err := utils.VerifyAccessToken(tokenString)
 		if err != nil {
+			message := "Invalid or expired token"
+			switch err {
+			case jwt.ErrTokenExpired:
+				message = "Token expired. Please refresh your token"
+			case jwt.ErrSignatureInvalid:
+				message = "Invalid token signature"
+			}
+
 			ctx.JSON(http.StatusUnauthorized, response.ResponseError{
 				Success: false,
-				Message: "Invalid or expired token",
+				Message: message,
 			})
 			ctx.Abort()
 			return
 		}
 
-		claims, ok := token.Claims.(*utils.UserPayload)
-		if !ok {
+		isActive, err := models.CheckSessionActive(claims.SessionId)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, response.ResponseError{
+				Success: false,
+				Message: "Failed to verify session",
+			})
+			ctx.Abort()
+			return
+		}
+
+		if !isActive {
 			ctx.JSON(http.StatusUnauthorized, response.ResponseError{
 				Success: false,
-				Message: "Invalid token claims",
+				Message: "Session has been terminated. Please login again",
 			})
 			ctx.Abort()
 			return
 		}
 
 		ctx.Set("userId", claims.Id)
+		ctx.Set("sessionId", claims.SessionId)
 
 		ctx.Next()
 	}

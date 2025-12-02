@@ -136,3 +136,14 @@ func (r *ShortLinkRepository) CheckShortCodeExists(ctx context.Context, shortCod
 	err := r.db.QueryRow(ctx, query, shortCode).Scan(&exists)
 	return exists, err
 }
+
+func (r *ShortLinkRepository) IncrementClick(ctx context.Context, code string) error {
+	query := `
+	UPDATE short_links 
+	SET click_count = click_count + 1,
+		last_clicked_at = NOW()
+	WHERE short_code = $1`
+
+	_, err := r.db.Exec(ctx, query, code)
+	return err
+}

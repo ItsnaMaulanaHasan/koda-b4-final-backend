@@ -37,7 +37,7 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 }
 
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	query := `SELECT id, fullname, email, password FROM users WHERE email = $1`
+	query := `SELECT id, profile_photo, fullname, email, password FROM users WHERE email = $1`
 
 	rows, err := database.DB.Query(ctx, query, email)
 	if err != nil {
@@ -57,7 +57,11 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 }
 
 func (r *UserRepository) GetById(ctx context.Context, id int) (*models.User, error) {
-	query := `SELECT id, fullname, email FROM users WHERE id = $1`
+	query := `
+		SELECT id, profile_photo, fullname, email
+		FROM users
+		WHERE id = $1
+	`
 
 	rows, err := database.DB.Query(ctx, query, id)
 	if err != nil {

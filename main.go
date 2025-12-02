@@ -4,17 +4,20 @@ package main
 // @version         1.0
 // @description     Dokumentasi REST API menggunakan Gin dan Swagger
 
-// @BasePath  /
+// @BasePath  /api/v1
 
 import (
 	"backend-koda-shortlink/internal/config"
 	"backend-koda-shortlink/internal/database"
 	"backend-koda-shortlink/internal/middlewares"
+	"backend-koda-shortlink/internal/routes"
 	"backend-koda-shortlink/pkg/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+
+	_ "backend-koda-shortlink/docs"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -37,6 +40,8 @@ func main() {
 	})
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	routes.SetUpRoutes(r)
 
 	r.Run(":8080")
 }

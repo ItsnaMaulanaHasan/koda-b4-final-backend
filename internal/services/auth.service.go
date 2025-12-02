@@ -66,7 +66,7 @@ func (s *AuthService) Login(ctx context.Context, req *models.LoginRequest, ipAdd
 		[]byte(user.Password),
 	)
 	if err != nil || !isPasswordValid {
-		return nil, errors.New("wrong email aa or password")
+		return nil, errors.New("wrong email or password")
 	}
 
 	refreshToken, expiresAt, err := utils.GenerateRefreshToken(user.Id)

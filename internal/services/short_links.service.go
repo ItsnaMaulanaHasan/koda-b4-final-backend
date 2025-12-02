@@ -1,6 +1,7 @@
 package services
 
 import (
+	"backend-koda-shortlink/internal/config"
 	"backend-koda-shortlink/internal/models"
 	"backend-koda-shortlink/internal/repository"
 	"context"
@@ -8,6 +9,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"strings"
+	"time"
 )
 
 type ShortLinkService struct {
@@ -123,4 +125,34 @@ func generateRandomCode(length int) string {
 		code = code[:length]
 	}
 	return code
+}
+
+func (s *ShortLinkService) ResolveShortCode(ctx context.Context, code string) (*models.ShortLink, error) {
+	url, err := config.Rdb.Get(ctx, "sl:"+code).Result()
+	if err == nil && url != "" {
+		return &models.ShortLink{
+			ShortCode:   code,
+			OriginalURL: url,
+			IsActive:    true,
+		}, nil
+	}
+
+	link, err := s.repo.GetByShortCode(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+
+	if !link.IsActive {
+		return nil, errors.New("short link inactive")
+	}
+
+	config.Rdb.Set(ctx, "sl:"+code, link.OriginalURL, 15*time.Minute)
+
+	return link, nil
+}
+
+func (s *ShortLinkService) LogClick(code string) {
+	ctx := context.Background()
+
+	_ = s.repo.IncrementClick(ctx, code)
 }

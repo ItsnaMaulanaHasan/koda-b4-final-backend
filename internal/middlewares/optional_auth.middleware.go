@@ -9,10 +9,10 @@ import (
 )
 
 type OptionalAuthMiddleware struct {
-	sessionRepo repository.SessionRepository
+	sessionRepo *repository.SessionRepository
 }
 
-func NewOptionalAuthMiddleware(sessionRepo repository.SessionRepository) *OptionalAuthMiddleware {
+func NewOptionalAuthMiddleware(sessionRepo *repository.SessionRepository) *OptionalAuthMiddleware {
 	return &OptionalAuthMiddleware{
 		sessionRepo: sessionRepo,
 	}

@@ -17,19 +17,22 @@ func SetUpRoutes(r *gin.Engine) {
 	clickRepo := repository.NewClickRepository(database.DB)
 	dashboardRepo := repository.NewDashboardRepository(database.DB)
 
+	userService := services.NewUserService(userRepo)
 	authService := services.NewAuthService(userRepo, sessionRepo)
 	shortLinkService := services.NewShortLinkService(shortLinkRepo, clickRepo)
 	dashboardService := services.NewDashboardService(dashboardRepo)
 
+	userHandler := handlers.NewUserHandler(userService)
 	authHandler := handlers.NewAuthHandler(authService)
 	shortLinkHandler := handlers.NewShortLinkHandler(shortLinkService)
 	dashboardHandler := handlers.NewDashboardHandler(dashboardService)
 
-	authMiddleware := middlewares.NewAuthMiddleware(*sessionRepo)
-	optionalAuth := middlewares.NewOptionalAuthMiddleware(*sessionRepo)
+	authMiddleware := middlewares.NewAuthMiddleware(sessionRepo)
+	optionalAuth := middlewares.NewOptionalAuthMiddleware(sessionRepo)
 
 	authRouter(r.Group("/api/v1/auth"), authHandler)
 	shortLinkRoutes(r.Group("/api/v1/links", authMiddleware.Auth()), shortLinkHandler)
+	userRouter(r.Group("/api/v1/users", authMiddleware.Auth()), userHandler)
 
 	r.POST("/api/v1/links", optionalAuth.OptionalAuth(), shortLinkHandler.CreateShortLink)
 

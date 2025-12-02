@@ -11,10 +11,10 @@ import (
 )
 
 type AuthHandler struct {
-	authService services.AuthService
+	authService *services.AuthService
 }
 
-func NewAuthHandler(authService services.AuthService) *AuthHandler {
+func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 	}
@@ -151,7 +151,7 @@ func (h *AuthHandler) RefreshToken(ctx *gin.Context) {
 		Success: true,
 		Message: "Token refreshed successfully",
 		Data: gin.H{
-			"access_token": accessToken,
+			"accessToken": accessToken,
 		},
 	})
 }

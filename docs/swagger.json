@@ -40,7 +40,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Login successful",
+                        "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
@@ -50,12 +50,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object",
-                                            "properties": {
-                                                "token": {
-                                                    "type": "string"
-                                                }
-                                            }
+                                            "$ref": "#/definitions/models.LoginResponse"
                                         }
                                     }
                                 }
@@ -63,19 +58,19 @@
                         }
                     },
                     "400": {
-                        "description": "Invalid request body",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseError"
                         }
                     },
                     "401": {
-                        "description": "Wrong email or password",
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseError"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseError"
                         }
@@ -99,34 +94,29 @@
                 "parameters": [
                     {
                         "description": "Refresh Token",
-                        "name": "refresh_token",
+                        "name": "refreshToken",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "refresh_token": {
-                                    "type": "string"
-                                }
-                            }
+                            "$ref": "#/definitions/models.LogoutRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Logout successful",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseSuccess"
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseError"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseError"
                         }
@@ -150,22 +140,17 @@
                 "parameters": [
                     {
                         "description": "Refresh Token",
-                        "name": "refresh_token",
+                        "name": "refreshToken",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "refresh_token": {
-                                    "type": "string"
-                                }
-                            }
+                            "$ref": "#/definitions/models.RefreshTokenRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Token refreshed",
+                        "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
@@ -179,9 +164,6 @@
                                             "properties": {
                                                 "access_token": {
                                                     "type": "string"
-                                                },
-                                                "expires_in": {
-                                                    "type": "integer"
                                                 }
                                             }
                                         }
@@ -191,19 +173,19 @@
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseError"
                         }
                     },
                     "401": {
-                        "description": "Invalid or expired refresh token",
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseError"
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseError"
                         }
@@ -250,7 +232,7 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "User created successfully.",
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -260,7 +242,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.Register"
+                                            "$ref": "#/definitions/models.User"
                                         }
                                     }
                                 }
@@ -268,19 +250,19 @@
                         }
                     },
                     "400": {
-                        "description": "Invalid request body or failed to hash password.",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseError"
                         }
                     },
                     "409": {
-                        "description": "Email already registered.",
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseError"
                         }
                     },
                     "500": {
-                        "description": "Internal server error while creating user.",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/response.ResponseError"
                         }
@@ -290,7 +272,40 @@
         }
     },
     "definitions": {
-        "models.Register": {
+        "models.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "refreshToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.LogoutRequest": {
+            "type": "object",
+            "required": [
+                "refreshToken"
+            ],
+            "properties": {
+                "refreshToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RefreshTokenRequest": {
+            "type": "object",
+            "required": [
+                "refreshToken"
+            ],
+            "properties": {
+                "refreshToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.User": {
             "type": "object",
             "properties": {
                 "email": {

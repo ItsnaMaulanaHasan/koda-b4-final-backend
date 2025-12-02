@@ -1,6 +1,27 @@
 basePath: /api/v1
 definitions:
-  models.Register:
+  models.LoginResponse:
+    properties:
+      accessToken:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  models.LogoutRequest:
+    properties:
+      refreshToken:
+        type: string
+    required:
+    - refreshToken
+    type: object
+  models.RefreshTokenRequest:
+    properties:
+      refreshToken:
+        type: string
+    required:
+    - refreshToken
+    type: object
+  models.User:
     properties:
       email:
         type: string
@@ -58,27 +79,24 @@ paths:
       - application/json
       responses:
         "200":
-          description: Login successful
+          description: OK
           schema:
             allOf:
             - $ref: '#/definitions/response.ResponseSuccess'
             - properties:
                 data:
-                  properties:
-                    token:
-                      type: string
-                  type: object
+                  $ref: '#/definitions/models.LoginResponse'
               type: object
         "400":
-          description: Invalid request body
+          description: Bad Request
           schema:
             $ref: '#/definitions/response.ResponseError'
         "401":
-          description: Wrong email or password
+          description: Unauthorized
           schema:
             $ref: '#/definitions/response.ResponseError'
         "500":
-          description: Internal server error
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/response.ResponseError'
       summary: Login user
@@ -92,26 +110,23 @@ paths:
       parameters:
       - description: Refresh Token
         in: body
-        name: refresh_token
+        name: refreshToken
         required: true
         schema:
-          properties:
-            refresh_token:
-              type: string
-          type: object
+          $ref: '#/definitions/models.LogoutRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Logout successful
+          description: OK
           schema:
             $ref: '#/definitions/response.ResponseSuccess'
         "400":
-          description: Invalid request
+          description: Bad Request
           schema:
             $ref: '#/definitions/response.ResponseError'
         "500":
-          description: Internal server error
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/response.ResponseError'
       summary: Logout user
@@ -125,18 +140,15 @@ paths:
       parameters:
       - description: Refresh Token
         in: body
-        name: refresh_token
+        name: refreshToken
         required: true
         schema:
-          properties:
-            refresh_token:
-              type: string
-          type: object
+          $ref: '#/definitions/models.RefreshTokenRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Token refreshed
+          description: OK
           schema:
             allOf:
             - $ref: '#/definitions/response.ResponseSuccess'
@@ -145,20 +157,18 @@ paths:
                   properties:
                     access_token:
                       type: string
-                    expires_in:
-                      type: integer
                   type: object
               type: object
         "400":
-          description: Invalid request
+          description: Bad Request
           schema:
             $ref: '#/definitions/response.ResponseError'
         "401":
-          description: Invalid or expired refresh token
+          description: Unauthorized
           schema:
             $ref: '#/definitions/response.ResponseError'
         "500":
-          description: Internal server error
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/response.ResponseError'
       summary: Refresh access token
@@ -190,24 +200,24 @@ paths:
       - application/json
       responses:
         "201":
-          description: User created successfully.
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/response.ResponseSuccess'
             - properties:
                 data:
-                  $ref: '#/definitions/models.Register'
+                  $ref: '#/definitions/models.User'
               type: object
         "400":
-          description: Invalid request body or failed to hash password.
+          description: Bad Request
           schema:
             $ref: '#/definitions/response.ResponseError'
         "409":
-          description: Email already registered.
+          description: Conflict
           schema:
             $ref: '#/definitions/response.ResponseError'
         "500":
-          description: Internal server error while creating user.
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/response.ResponseError'
       summary: Register new user

@@ -1,5 +1,12 @@
 basePath: /api/v1
 definitions:
+  models.CreateShortLinkRequest:
+    properties:
+      original_url:
+        type: string
+    required:
+    - original_url
+    type: object
   models.LoginResponse:
     properties:
       accessToken:
@@ -21,6 +28,38 @@ definitions:
     required:
     - refreshToken
     type: object
+  models.ShortLink:
+    properties:
+      click_count:
+        type: integer
+      created_at:
+        type: string
+      created_by:
+        type: integer
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_clicked_at:
+        type: string
+      original_url:
+        type: string
+      short_code:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  models.UpdateShortLinkRequest:
+    properties:
+      is_active:
+        type: boolean
+      original_url:
+        type: string
+    type: object
   models.User:
     properties:
       email:
@@ -33,9 +72,6 @@ definitions:
   response.ResponseError:
     properties:
       error:
-        example: cause of error
-        type: string
-      message:
         example: Error message
         type: string
       success:
@@ -223,4 +259,216 @@ paths:
       summary: Register new user
       tags:
       - auth
+  /links:
+    get:
+      consumes:
+      - application/json
+      description: Get all short links created by authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseSuccess'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.ShortLink'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Get all short links
+      tags:
+      - links
+    post:
+      consumes:
+      - application/json
+      description: Create a new short link with auto-generated code
+      parameters:
+      - description: Short link details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateShortLinkRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseSuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ShortLink'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Create short link
+      tags:
+      - links
+  /links/{shortCode}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete short link by short code
+      parameters:
+      - description: Short code
+        in: path
+        name: shortCode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ResponseSuccess'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Delete short link
+      tags:
+      - links
+    get:
+      consumes:
+      - application/json
+      description: Get specific short link details by short code
+      parameters:
+      - description: Short code
+        in: path
+        name: shortCode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseSuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ShortLink'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Get short link by code
+      tags:
+      - links
+    put:
+      consumes:
+      - application/json
+      description: Update short link details (original URL and/or active status)
+      parameters:
+      - description: Short code
+        in: path
+        name: shortCode
+        required: true
+        type: string
+      - description: Update details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateShortLinkRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseSuccess'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ShortLink'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: Update short link
+      tags:
+      - links
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

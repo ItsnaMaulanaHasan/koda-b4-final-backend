@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"backend-koda-shortlink/internal/models"
+	"backend-koda-shortlink/internal/repository"
 	"backend-koda-shortlink/internal/utils"
 	"backend-koda-shortlink/pkg/response"
 	"net/http"
@@ -11,14 +11,24 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func Auth() gin.HandlerFunc {
+type AuthMiddleware struct {
+	sessionRepo repository.SessionRepository
+}
+
+func NewAuthMiddleware(sessionRepo repository.SessionRepository) *AuthMiddleware {
+	return &AuthMiddleware{
+		sessionRepo: sessionRepo,
+	}
+}
+
+func (m *AuthMiddleware) Auth() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.Request.Header.Get("Authorization")
 		tokenString, found := strings.CutPrefix(authHeader, "Bearer ")
 		if !found {
 			ctx.JSON(http.StatusUnauthorized, response.ResponseError{
 				Success: false,
-				Message: "Authorization header required or invalid format",
+				Error:   "Authorization header required or invalid format",
 			})
 			ctx.Abort()
 			return
@@ -36,17 +46,17 @@ func Auth() gin.HandlerFunc {
 
 			ctx.JSON(http.StatusUnauthorized, response.ResponseError{
 				Success: false,
-				Message: message,
+				Error:   message,
 			})
 			ctx.Abort()
 			return
 		}
 
-		isActive, err := models.CheckSessionActive(claims.SessionId)
+		isActive, err := m.sessionRepo.CheckActive(ctx.Request.Context(), claims.SessionId)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, response.ResponseError{
 				Success: false,
-				Message: "Failed to verify session",
+				Error:   "Failed to verify session",
 			})
 			ctx.Abort()
 			return
@@ -55,7 +65,7 @@ func Auth() gin.HandlerFunc {
 		if !isActive {
 			ctx.JSON(http.StatusUnauthorized, response.ResponseError{
 				Success: false,
-				Message: "Session has been terminated. Please login again",
+				Error:   "Session has been terminated. Please login again",
 			})
 			ctx.Abort()
 			return

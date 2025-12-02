@@ -8,8 +8,7 @@ type ResponseSuccess struct {
 
 type ResponseError struct {
 	Success bool   `json:"success" example:"false"`
-	Message string `json:"message" example:"Error message"`
-	Error   string `json:"error,omitempty" example:"cause of error"`
+	Error   string `json:"error,omitempty" example:"Error message"`
 }
 
 type HateoasLink struct {

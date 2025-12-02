@@ -74,7 +74,7 @@ func (r *UserRepository) GetById(ctx context.Context, id int) (*models.User, err
 	}
 
 	query := `
-		SELECT id, profile_photo, fullname, email
+		SELECT id, profile_photo, fullname, email, password
 		FROM users
 		WHERE id = $1
 	`

@@ -11,7 +11,7 @@ CREATE TABLE "clicks" (
     "browser" varchar(50),
     "os" varchar(50),
     "created_at" timestamp DEFAULT (CURRENT_TIMESTAMP),
-    "updated_at" timestamp DEFAULT (CURRENT_TIMESTAMP),
+    "updated_at" timestamp DEFAULT (CURRENT_TIMESTAMP)
 );
 
 ALTER TABLE "clicks"

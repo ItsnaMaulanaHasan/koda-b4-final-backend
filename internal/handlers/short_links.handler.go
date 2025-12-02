@@ -257,5 +257,7 @@ func (h *ShortLinkHandler) Redirect(c *gin.Context) {
 
 	go h.service.LogClick(code)
 
+	h.service.SaveClickAnalytics(c.Request, link)
+
 	c.Redirect(http.StatusTemporaryRedirect, link.OriginalURL)
 }

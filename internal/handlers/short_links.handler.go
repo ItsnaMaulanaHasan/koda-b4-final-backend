@@ -5,6 +5,7 @@ import (
 	"backend-koda-shortlink/internal/services"
 	"backend-koda-shortlink/pkg/response"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +26,7 @@ func NewShortLinkHandler(service *services.ShortLinkService) *ShortLinkHandler {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        request  body  models.CreateShortLinkRequest  true  "Short link details"
-// @Success      201  {object}  response.ResponseSuccess{data=models.ShortLink}
+// @Success      201  {object}  response.ResponseSuccess
 // @Failure      400  {object}  response.ResponseError
 // @Failure      401  {object}  response.ResponseError
 // @Failure      500  {object}  response.ResponseError
@@ -54,7 +55,11 @@ func (h *ShortLinkHandler) CreateShortLink(c *gin.Context) {
 	c.JSON(http.StatusCreated, response.ResponseSuccess{
 		Success: true,
 		Message: "Short link created successfully",
-		Data:    link,
+		Data: models.ShortLinkResponse{
+			ShortCode:   link.ShortCode,
+			OriginalUrl: link.OriginalURL,
+			ShortUrl:    os.Getenv("APP_URL") + link.ShortCode,
+		},
 	})
 }
 
@@ -65,7 +70,7 @@ func (h *ShortLinkHandler) CreateShortLink(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Success      200  {object}  response.ResponseSuccess{data=[]models.ShortLink}
+// @Success      200  {object}  response.ResponseSuccess
 // @Failure      401  {object}  response.ResponseError
 // @Failure      500  {object}  response.ResponseError
 // @Router       /links [get]
@@ -96,7 +101,7 @@ func (h *ShortLinkHandler) GetAllLinks(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        shortCode  path  string  true  "Short code"
-// @Success      200  {object}  response.ResponseSuccess{data=models.ShortLink}
+// @Success      200  {object}  response.ResponseSuccess
 // @Failure      401  {object}  response.ResponseError
 // @Failure      403  {object}  response.ResponseError
 // @Failure      404  {object}  response.ResponseError
@@ -145,7 +150,7 @@ func (h *ShortLinkHandler) GetLinkByShortCode(c *gin.Context) {
 // @Security     BearerAuth
 // @Param        shortCode  path  string  true  "Short code"
 // @Param        request  body  models.UpdateShortLinkRequest  true  "Update details"
-// @Success      200  {object}  response.ResponseSuccess{data=models.ShortLink}
+// @Success      200  {object}  response.ResponseSuccess
 // @Failure      400  {object}  response.ResponseError
 // @Failure      401  {object}  response.ResponseError
 // @Failure      403  {object}  response.ResponseError

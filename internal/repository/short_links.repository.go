@@ -1,9 +1,12 @@
 package repository
 
 import (
+	"backend-koda-shortlink/internal/config"
 	"backend-koda-shortlink/internal/models"
 	"context"
+	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,6 +27,9 @@ func (r *ShortLinkRepository) Create(ctx context.Context, link *models.ShortLink
 		VALUES ($1, $2, $3, $4, $5) 
 		RETURNING id, created_at, updated_at, is_active, click_count
 	`
+
+	config.Rdb.Del(ctx, "link:"+link.ShortCode+":destination")
+
 	return r.db.QueryRow(
 		ctx,
 		query,
@@ -36,6 +42,15 @@ func (r *ShortLinkRepository) Create(ctx context.Context, link *models.ShortLink
 }
 
 func (r *ShortLinkRepository) GetByShortCode(ctx context.Context, shortCode string) (*models.ShortLink, error) {
+	cacheKey := "link:" + shortCode + ":destination"
+
+	if cached, err := config.Rdb.Get(ctx, cacheKey).Result(); err == nil && cached != "" {
+		var link models.ShortLink
+		if json.Unmarshal([]byte(cached), &link) == nil {
+			return &link, nil
+		}
+	}
+
 	query := `
 		SELECT id, user_id, short_code, original_url, is_active, 
 			   click_count, last_clicked_at, created_at, updated_at,
@@ -55,6 +70,10 @@ func (r *ShortLinkRepository) GetByShortCode(ctx context.Context, shortCode stri
 		}
 		return nil, err
 	}
+
+	jsonData, _ := json.Marshal(link)
+	config.Rdb.Set(ctx, cacheKey, jsonData, 15*time.Minute)
+
 	return link, nil
 }
 
@@ -115,6 +134,9 @@ func (r *ShortLinkRepository) Update(ctx context.Context, shortCode string, user
 		}
 		return err
 	}
+
+	config.Rdb.Del(ctx, "link:"+link.ShortCode+":destination")
+
 	return nil
 }
 
@@ -127,6 +149,9 @@ func (r *ShortLinkRepository) Delete(ctx context.Context, shortCode string, user
 	if result.RowsAffected() == 0 {
 		return errors.New("short link not found or unauthorized")
 	}
+
+	config.Rdb.Del(ctx, "link:"+shortCode+":destination")
+
 	return nil
 }
 
@@ -145,5 +170,11 @@ func (r *ShortLinkRepository) IncrementClick(ctx context.Context, code string) e
 	WHERE short_code = $1`
 
 	_, err := r.db.Exec(ctx, query, code)
-	return err
+	if err != nil {
+		return err
+	}
+
+	config.Rdb.Incr(ctx, "link:"+code+":clicks")
+
+	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"backend-koda-shortlink/internal/repository"
 	"backend-koda-shortlink/internal/utils"
 	"context"
+	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -129,13 +130,12 @@ func (s *ShortLinkService) generateUniqueShortCode(ctx context.Context) (string,
 }
 
 func (s *ShortLinkService) ResolveShortCode(ctx context.Context, code string) (*models.ShortLink, error) {
-	url, err := config.Rdb.Get(ctx, "sl:"+code).Result()
-	if err == nil && url != "" {
-		return &models.ShortLink{
-			ShortCode:   code,
-			OriginalURL: url,
-			IsActive:    true,
-		}, nil
+	cached, err := config.Rdb.Get(ctx, "link:"+code+":destination").Result()
+	if err == nil && cached != "" {
+		var link models.ShortLink
+		if json.Unmarshal([]byte(cached), &link) == nil {
+			return &link, nil
+		}
 	}
 
 	link, err := s.shortLinkRepo.GetByShortCode(ctx, code)
@@ -147,7 +147,8 @@ func (s *ShortLinkService) ResolveShortCode(ctx context.Context, code string) (*
 		return nil, errors.New("short link inactive")
 	}
 
-	config.Rdb.Set(ctx, "sl:"+code, link.OriginalURL, 15*time.Minute)
+	jsonData, _ := json.Marshal(link)
+	config.Rdb.Set(ctx, "link:"+code+":destination", jsonData, 15*time.Minute)
 
 	return link, nil
 }

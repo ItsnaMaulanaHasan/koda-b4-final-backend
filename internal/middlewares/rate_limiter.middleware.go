@@ -1,38 +1,35 @@
 package middlewares
 
 import (
+	"backend-koda-shortlink/internal/config"
 	"backend-koda-shortlink/pkg/response"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 func RateLimiter(limit int, window time.Duration) gin.HandlerFunc {
-	var mu sync.Mutex
-	tokens := limit
-	lastRefill := time.Now()
-
 	return func(c *gin.Context) {
-		mu.Lock()
-		now := time.Now()
+		ip := c.ClientIP()
+		path := c.FullPath()
 
-		if now.Sub(lastRefill) >= window {
-			tokens = limit
-			lastRefill = now
+		key := "ratelimit:" + ip + ":" + path
+
+		count, _ := config.Rdb.Incr(c, key).Result()
+
+		if count == 1 {
+			config.Rdb.Expire(c, key, window)
 		}
 
-		if tokens > 0 {
-			tokens--
-			mu.Unlock()
-			c.Next()
-		} else {
-			mu.Unlock()
+		if count > int64(limit) {
 			c.JSON(429, response.ResponseError{
 				Success: false,
 				Error:   "Too many requests",
 			})
 			c.Abort()
+			return
 		}
+
+		c.Next()
 	}
 }

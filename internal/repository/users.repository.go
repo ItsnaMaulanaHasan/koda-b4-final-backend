@@ -1,10 +1,14 @@
 package repository
 
 import (
+	"backend-koda-shortlink/internal/config"
 	"backend-koda-shortlink/internal/database"
 	"backend-koda-shortlink/internal/models"
 	"context"
+	"encoding/json"
 	"errors"
+	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,6 +37,8 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 		user.Password,
 	).Scan(&user.Id)
 
+	config.Rdb.Del(ctx, "user:"+strconv.Itoa(user.Id)+":profile")
+
 	return err
 }
 
@@ -57,6 +63,16 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 }
 
 func (r *UserRepository) GetById(ctx context.Context, id int) (*models.User, error) {
+	cacheKey := "user:" + strconv.Itoa(id) + ":profile"
+
+	cached, err := config.Rdb.Get(ctx, cacheKey).Result()
+	if err == nil && cached != "" {
+		var user models.User
+		if json.Unmarshal([]byte(cached), &user) == nil {
+			return &user, nil
+		}
+	}
+
 	query := `
 		SELECT id, profile_photo, fullname, email
 		FROM users
@@ -77,6 +93,9 @@ func (r *UserRepository) GetById(ctx context.Context, id int) (*models.User, err
 		return nil, err
 	}
 
+	jsonData, _ := json.Marshal(user)
+	config.Rdb.Set(ctx, cacheKey, jsonData, 15*time.Minute)
+
 	return &user, nil
 }
 
@@ -91,5 +110,8 @@ func (r *UserRepository) EmailExists(ctx context.Context, email string) (bool, e
 func (r *UserRepository) UpdateCreatedByAndUpdatedBy(ctx context.Context, userId int) error {
 	query := `UPDATE users SET created_by = $1, updated_by = $1 WHERE id = $1`
 	_, err := database.DB.Exec(ctx, query, userId)
+
+	config.Rdb.Del(ctx, "user:"+strconv.Itoa(userId)+":profile")
+
 	return err
 }

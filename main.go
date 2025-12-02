@@ -6,6 +6,10 @@ package main
 
 // @BasePath  /api/v1
 
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
 import (
 	"backend-koda-shortlink/internal/config"
 	"backend-koda-shortlink/internal/database"

@@ -25,4 +25,6 @@ func SetUpRoutes(r *gin.Engine) {
 
 	authRouter(r.Group("/api/v1/auth"), authHandler)
 	shortLinkRoutes(r.Group("/api/v1/links", authMiddleware.Auth()), shortLinkHandler)
+	r.GET("/:shortCode", shortLinkHandler.Redirect)
+
 }

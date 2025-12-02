@@ -242,3 +242,20 @@ func (h *ShortLinkHandler) DeleteShortLink(c *gin.Context) {
 		Data:    nil,
 	})
 }
+
+func (h *ShortLinkHandler) Redirect(c *gin.Context) {
+	code := c.Param("shortCode")
+
+	link, err := h.service.ResolveShortCode(c.Request.Context(), code)
+	if err != nil {
+		c.JSON(http.StatusNotFound, response.ResponseError{
+			Success: false,
+			Error:   "Short link not found",
+		})
+		return
+	}
+
+	go h.service.LogClick(code)
+
+	c.Redirect(http.StatusTemporaryRedirect, link.OriginalURL)
+}

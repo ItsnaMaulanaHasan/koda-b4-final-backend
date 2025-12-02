@@ -8,14 +8,16 @@ import (
 )
 
 type UserPayload struct {
-	Id int `json:"id"`
+	Id        int `json:"id"`
+	SessionId int `json:"sessionId"`
 	jwt.RegisteredClaims
 }
 
-func GenerateAccessToken(id int) (string, error) {
+func GenerateAccessToken(userId, sessionId int) (string, error) {
 	secretKey := []byte(os.Getenv("APP_SECRET"))
 	claims := UserPayload{
-		Id: id,
+		Id:        userId,
+		SessionId: sessionId,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -26,12 +28,12 @@ func GenerateAccessToken(id int) (string, error) {
 	return token.SignedString(secretKey)
 }
 
-func GenerateRefreshToken(id int) (string, time.Time, error) {
+func GenerateRefreshToken(userId int) (string, time.Time, error) {
 	secretKey := []byte(os.Getenv("REFRESH_SECRET"))
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	claims := UserPayload{
-		Id: id,
+		Id: userId,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

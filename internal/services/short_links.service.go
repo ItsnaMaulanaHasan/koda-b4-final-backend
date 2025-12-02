@@ -4,13 +4,11 @@ import (
 	"backend-koda-shortlink/internal/config"
 	"backend-koda-shortlink/internal/models"
 	"backend-koda-shortlink/internal/repository"
+	"backend-koda-shortlink/internal/utils"
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/mssola/user_agent"
@@ -34,12 +32,19 @@ func (s *ShortLinkService) CreateShortLink(ctx context.Context, userID int, req 
 		return nil, err
 	}
 
+	var createdBy *int
+	if userID > 0 {
+		createdBy = &userID
+	} else {
+		createdBy = nil
+	}
+
 	link := &models.ShortLink{
-		UserID:      userID,
+		UserID:      createdBy,
 		ShortCode:   shortCode,
 		OriginalURL: req.OriginalURL,
-		CreatedBy:   &userID,
-		UpdatedBy:   &userID,
+		CreatedBy:   createdBy,
+		UpdatedBy:   createdBy,
 	}
 
 	err = s.shortLinkRepo.Create(ctx, link)
@@ -60,7 +65,7 @@ func (s *ShortLinkService) GetLinkByShortCode(ctx context.Context, shortCode str
 		return nil, err
 	}
 
-	if link.UserID != userID {
+	if link.UserID != &userID {
 		return nil, errors.New("unauthorized access")
 	}
 
@@ -72,7 +77,7 @@ func (s *ShortLinkService) UpdateShortLink(ctx context.Context, shortCode string
 	if err != nil {
 		return nil, err
 	}
-	if existing.UserID != userID {
+	if existing.UserID != &userID {
 		return nil, errors.New("unauthorized access")
 	}
 
@@ -101,7 +106,7 @@ func (s *ShortLinkService) DeleteShortLink(ctx context.Context, shortCode string
 	if err != nil {
 		return err
 	}
-	if existing.UserID != userID {
+	if existing.UserID != &userID {
 		return errors.New("unauthorized access")
 	}
 
@@ -111,7 +116,7 @@ func (s *ShortLinkService) DeleteShortLink(ctx context.Context, shortCode string
 func (s *ShortLinkService) generateUniqueShortCode(ctx context.Context) (string, error) {
 	maxAttempts := 5
 	for range maxAttempts {
-		code := generateRandomCode(6)
+		code := utils.GenerateRandomCode(6)
 		exists, err := s.shortLinkRepo.CheckShortCodeExists(ctx, code)
 		if err != nil {
 			return "", err
@@ -121,18 +126,6 @@ func (s *ShortLinkService) generateUniqueShortCode(ctx context.Context) (string,
 		}
 	}
 	return "", errors.New("failed to generate unique short code")
-}
-
-func generateRandomCode(length int) string {
-	bytes := make([]byte, length)
-	rand.Read(bytes)
-	code := base64.URLEncoding.EncodeToString(bytes)
-	code = strings.ReplaceAll(code, "-", "")
-	code = strings.ReplaceAll(code, "_", "")
-	if len(code) > length {
-		code = code[:length]
-	}
-	return code
 }
 
 func (s *ShortLinkService) ResolveShortCode(ctx context.Context, code string) (*models.ShortLink, error) {

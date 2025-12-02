@@ -2,10 +2,10 @@ basePath: /api/v1
 definitions:
   models.CreateShortLinkRequest:
     properties:
-      original_url:
+      originalUrl:
         type: string
     required:
-    - original_url
+    - originalUrl
     type: object
   models.LoginResponse:
     properties:
@@ -28,36 +28,11 @@ definitions:
     required:
     - refreshToken
     type: object
-  models.ShortLink:
-    properties:
-      click_count:
-        type: integer
-      created_at:
-        type: string
-      created_by:
-        type: integer
-      id:
-        type: integer
-      is_active:
-        type: boolean
-      last_clicked_at:
-        type: string
-      original_url:
-        type: string
-      short_code:
-        type: string
-      updated_at:
-        type: string
-      updated_by:
-        type: integer
-      user_id:
-        type: integer
-    type: object
   models.UpdateShortLinkRequest:
     properties:
-      is_active:
+      isActive:
         type: boolean
-      original_url:
+      originalUrl:
         type: string
     type: object
   models.User:
@@ -307,14 +282,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/response.ResponseSuccess'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/models.ShortLink'
-                  type: array
-              type: object
+            $ref: '#/definitions/response.ResponseSuccess'
         "401":
           description: Unauthorized
           schema:
@@ -345,12 +313,7 @@ paths:
         "201":
           description: Created
           schema:
-            allOf:
-            - $ref: '#/definitions/response.ResponseSuccess'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.ShortLink'
-              type: object
+            $ref: '#/definitions/response.ResponseSuccess'
         "400":
           description: Bad Request
           schema:
@@ -423,12 +386,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/response.ResponseSuccess'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.ShortLink'
-              type: object
+            $ref: '#/definitions/response.ResponseSuccess'
         "401":
           description: Unauthorized
           schema:
@@ -472,12 +430,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/response.ResponseSuccess'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.ShortLink'
-              type: object
+            $ref: '#/definitions/response.ResponseSuccess'
         "400":
           description: Bad Request
           schema:

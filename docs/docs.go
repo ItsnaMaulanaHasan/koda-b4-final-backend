@@ -345,22 +345,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ResponseSuccess"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.ShortLink"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/response.ResponseSuccess"
                         }
                     },
                     "401": {
@@ -409,19 +394,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ResponseSuccess"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.ShortLink"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/response.ResponseSuccess"
                         }
                     },
                     "400": {
@@ -476,19 +449,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ResponseSuccess"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.ShortLink"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/response.ResponseSuccess"
                         }
                     },
                     "401": {
@@ -556,19 +517,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.ResponseSuccess"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.ShortLink"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/response.ResponseSuccess"
                         }
                     },
                     "400": {
@@ -668,10 +617,10 @@ const docTemplate = `{
         "models.CreateShortLinkRequest": {
             "type": "object",
             "required": [
-                "original_url"
+                "originalUrl"
             ],
             "properties": {
-                "original_url": {
+                "originalUrl": {
                     "type": "string"
                 }
             }
@@ -709,51 +658,13 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ShortLink": {
-            "type": "object",
-            "properties": {
-                "click_count": {
-                    "type": "integer"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "created_by": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "is_active": {
-                    "type": "boolean"
-                },
-                "last_clicked_at": {
-                    "type": "string"
-                },
-                "original_url": {
-                    "type": "string"
-                },
-                "short_code": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "updated_by": {
-                    "type": "integer"
-                },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
         "models.UpdateShortLinkRequest": {
             "type": "object",
             "properties": {
-                "is_active": {
+                "isActive": {
                     "type": "boolean"
                 },
-                "original_url": {
+                "originalUrl": {
                     "type": "string"
                 }
             }

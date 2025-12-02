@@ -3,7 +3,6 @@ package handlers
 import (
 	"backend-koda-shortlink/internal/services"
 	"backend-koda-shortlink/pkg/response"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,7 +30,6 @@ func NewUserHandler(userService *services.UserService) *UserHandler {
 func (h *UserHandler) GetUserDetail(c *gin.Context) {
 	userId := c.GetInt("userId")
 
-	fmt.Printf("user id: %d\n", userId)
 	user, err := h.userService.GetById(c.Request.Context(), userId)
 	if err != nil {
 		c.JSON(404, response.ResponseError{

@@ -26,9 +26,12 @@ func SetUpRoutes(r *gin.Engine) {
 	dashboardHandler := handlers.NewDashboardHandler(dashboardService)
 
 	authMiddleware := middlewares.NewAuthMiddleware(*sessionRepo)
+	optionalAuth := middlewares.NewOptionalAuthMiddleware(*sessionRepo)
 
 	authRouter(r.Group("/api/v1/auth"), authHandler)
 	shortLinkRoutes(r.Group("/api/v1/links", authMiddleware.Auth()), shortLinkHandler)
+
+	r.POST("/api/v1/links", optionalAuth.OptionalAuth(), shortLinkHandler.CreateShortLink)
 
 	r.GET("/:shortCode", shortLinkHandler.Redirect)
 

@@ -3,13 +3,26 @@ package models
 import (
 	"backend-koda-shortlink/internal/database"
 	"context"
+	"errors"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type Register struct {
 	Id       int    `json:"id"`
-	FullName string `form:"fullName" json:"fullName"`
+	FullName string `form:"fullname" json:"fullName"`
 	Email    string `form:"email" json:"email"`
 	Password string `form:"password" json:"-"`
+}
+
+type Login struct {
+	Email    string `form:"email"`
+	Password string `form:"password"`
+}
+
+type QueryLogin struct {
+	Id       int    `db:"id"`
+	Password string `db:"password"`
 }
 
 func RegisterUser(bodyRegister *Register) (bool, string, error) {
@@ -27,7 +40,7 @@ func RegisterUser(bodyRegister *Register) (bool, string, error) {
 	// insert data to users
 	err = tx.QueryRow(
 		ctx,
-		`INSERT INTO users (fullName, email, password)
+		`INSERT INTO users (fullname, email, password)
 		 VALUES ($1, $2, $3)
 		 RETURNING id`,
 		bodyRegister.FullName, bodyRegister.Email, bodyRegister.Password,
@@ -68,4 +81,28 @@ func CheckUserEmail(email string) (bool, error) {
 	}
 
 	return exists, nil
+}
+
+func GetUserByEmail(bodyLogin *Login) (QueryLogin, string, error) {
+	message := ""
+	user := QueryLogin{}
+	rows, err := database.DB.Query(context.Background(),
+		"SELECT id, password FROM users WHERE email = $1",
+		bodyLogin.Email,
+	)
+	if err != nil {
+		message = "Failed to fetch user from database"
+		return user, message, err
+	}
+
+	user, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[QueryLogin])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return user, message, err
+		}
+		message = "Failed to process user data"
+		return user, message, err
+	}
+
+	return user, message, nil
 }

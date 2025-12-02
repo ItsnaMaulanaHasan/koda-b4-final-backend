@@ -1,0 +1,53 @@
+package middlewares
+
+import (
+	"backend-koda-shortlink/internal/utils"
+	"backend-koda-shortlink/pkg/response"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+)
+
+func Auth() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		authHeader := ctx.Request.Header.Get("Authorization")
+		tokenString, found := strings.CutPrefix(authHeader, "Bearer ")
+		if !found {
+			ctx.JSON(http.StatusUnauthorized, response.ResponseError{
+				Success: false,
+				Message: "Authorization header required or invalid format",
+			})
+			ctx.Abort()
+			return
+		}
+
+		token, err := jwt.ParseWithClaims(tokenString, &utils.UserPayload{}, func(token *jwt.Token) (any, error) {
+			return []byte(os.Getenv("APP_SECRET")), nil
+		})
+		if err != nil {
+			ctx.JSON(http.StatusUnauthorized, response.ResponseError{
+				Success: false,
+				Message: "Invalid or expired token",
+			})
+			ctx.Abort()
+			return
+		}
+
+		claims, ok := token.Claims.(*utils.UserPayload)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, response.ResponseError{
+				Success: false,
+				Message: "Invalid token claims",
+			})
+			ctx.Abort()
+			return
+		}
+
+		ctx.Set("userId", claims.Id)
+
+		ctx.Next()
+	}
+}

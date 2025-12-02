@@ -17,6 +17,7 @@ import (
 	"backend-koda-shortlink/internal/routes"
 	"backend-koda-shortlink/pkg/response"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -35,6 +36,8 @@ func main() {
 	r := gin.Default()
 	r.Use(gin.Recovery())
 	r.Use(middlewares.CorsMiddleware())
+	r.Use(middlewares.RateLimiter(60, time.Minute))
+	r.Use(middlewares.RequestLogger())
 
 	r.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, response.ResponseSuccess{

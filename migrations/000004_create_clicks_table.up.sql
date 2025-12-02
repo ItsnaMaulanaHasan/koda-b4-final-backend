@@ -17,12 +17,6 @@ CREATE TABLE "clicks" (
 ALTER TABLE "clicks"
 ADD FOREIGN KEY ("short_link_id") REFERENCES "short_links" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "clicks"
-ADD FOREIGN KEY ("created_by") REFERENCES "users" ("id");
-
-ALTER TABLE "clicks"
-ADD FOREIGN KEY ("updated_by") REFERENCES "users" ("id");
-
 CREATE INDEX idx_clicks_short_link_id_clicked_at ON "clicks" ("short_link_id", "clicked_at");
 
 CREATE INDEX idx_clicks_clicked_at ON "clicks" ("clicked_at");

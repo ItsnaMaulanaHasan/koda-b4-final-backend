@@ -56,8 +56,9 @@ func (s *ShortLinkService) CreateShortLink(ctx context.Context, userID int, req 
 	return link, nil
 }
 
-func (s *ShortLinkService) GetUserLinks(ctx context.Context, userID int) ([]models.ShortLink, error) {
-	return s.shortLinkRepo.GetAllByUserID(ctx, userID)
+func (s *ShortLinkService) GetUserLinksWithFilter(ctx context.Context, userID, page, limit int, search, status string) ([]models.ShortLink, int, error) {
+	offset := (page - 1) * limit
+	return s.shortLinkRepo.GetAllByUserIDWithFilter(ctx, userID, limit, offset, search, status)
 }
 
 func (s *ShortLinkService) GetLinkByShortCode(ctx context.Context, shortCode string, userID int) (*models.ShortLink, error) {
@@ -107,7 +108,7 @@ func (s *ShortLinkService) DeleteShortLink(ctx context.Context, shortCode string
 	if err != nil {
 		return err
 	}
-	if existing.UserID != &userID {
+	if existing.UserID == nil || *existing.UserID != userID {
 		return errors.New("unauthorized access")
 	}
 

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -77,18 +78,56 @@ func (r *ShortLinkRepository) GetByShortCode(ctx context.Context, shortCode stri
 	return link, nil
 }
 
-func (r *ShortLinkRepository) GetAllByUserID(ctx context.Context, userID int) ([]models.ShortLink, error) {
-	query := `
+func (r *ShortLinkRepository) GetAllByUserIDWithFilter(ctx context.Context, userID, limit, offset int, search, status string) ([]models.ShortLink, int, error) {
+	// Build query with filters
+	baseQuery := `FROM short_links WHERE user_id = $1`
+	countQuery := `SELECT COUNT(*) ` + baseQuery
+	selectQuery := `
 		SELECT id, user_id, short_code, original_url, is_active, 
 			   click_count, last_clicked_at, created_at, updated_at,
 			   created_by, updated_by
-		FROM short_links 
-		WHERE user_id = $1
-		ORDER BY created_at DESC
-	`
-	rows, err := r.db.Query(ctx, query, userID)
+	` + baseQuery
+
+	args := []interface{}{userID}
+	argCount := 1
+
+	if search != "" {
+		argCount++
+		baseQuery += ` AND (short_code ILIKE $` + strconv.Itoa(argCount) + ` OR original_url ILIKE $` + strconv.Itoa(argCount) + `)`
+		args = append(args, "%"+search+"%")
+		countQuery = `SELECT COUNT(*) ` + baseQuery
+		selectQuery = `
+			SELECT id, user_id, short_code, original_url, is_active, 
+				   click_count, last_clicked_at, created_at, updated_at,
+				   created_by, updated_by
+		` + baseQuery
+	}
+
+	if status == "active" || status == "inactive" {
+		argCount++
+		isActive := status == "active"
+		baseQuery += ` AND is_active = $` + strconv.Itoa(argCount)
+		args = append(args, isActive)
+		countQuery = `SELECT COUNT(*) ` + baseQuery
+		selectQuery = `
+			SELECT id, user_id, short_code, original_url, is_active, 
+				   click_count, last_clicked_at, created_at, updated_at,
+				   created_by, updated_by
+		` + baseQuery
+	}
+
+	var total int
+	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	selectQuery += ` ORDER BY created_at DESC LIMIT $` + strconv.Itoa(argCount+1) + ` OFFSET $` + strconv.Itoa(argCount+2)
+	args = append(args, limit, offset)
+
+	rows, err := r.db.Query(ctx, selectQuery, args...)
+	if err != nil {
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -101,11 +140,12 @@ func (r *ShortLinkRepository) GetAllByUserID(ctx context.Context, userID int) ([
 			&link.CreatedAt, &link.UpdatedAt, &link.CreatedBy, &link.UpdatedBy,
 		)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		links = append(links, link)
 	}
-	return links, nil
+
+	return links, total, nil
 }
 
 func (r *ShortLinkRepository) Update(ctx context.Context, shortCode string, userID int, link *models.ShortLink) error {

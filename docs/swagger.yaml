@@ -14,20 +14,6 @@ definitions:
       refreshToken:
         type: string
     type: object
-  models.LogoutRequest:
-    properties:
-      refreshToken:
-        type: string
-    required:
-    - refreshToken
-    type: object
-  models.RefreshTokenRequest:
-    properties:
-      refreshToken:
-        type: string
-    required:
-    - refreshToken
-    type: object
   models.UpdateShortLinkRequest:
     properties:
       isActive:
@@ -128,16 +114,7 @@ paths:
       - auth
   /auth/logout:
     post:
-      consumes:
-      - application/json
-      description: Invalidate refresh token
-      parameters:
-      - description: Refresh Token
-        in: body
-        name: refreshToken
-        required: true
-        schema:
-          $ref: '#/definitions/models.LogoutRequest'
+      description: Invalidate refresh token from httpOnly cookie
       produces:
       - application/json
       responses:
@@ -158,16 +135,7 @@ paths:
       - auth
   /auth/refresh:
     post:
-      consumes:
-      - application/json
-      description: Get new access token using refresh token
-      parameters:
-      - description: Refresh Token
-        in: body
-        name: refreshToken
-        required: true
-        schema:
-          $ref: '#/definitions/models.RefreshTokenRequest'
+      description: Get new access token using refresh token from httpOnly cookie
       produces:
       - application/json
       responses:

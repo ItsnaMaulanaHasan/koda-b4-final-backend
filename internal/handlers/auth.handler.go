@@ -109,33 +109,47 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetCookie(
+		"refreshToken",
+		loginResp.RefreshToken,
+		7*24*60*60,
+		"/",
+		"",
+		false,
+		true,
+	)
+
 	ctx.JSON(http.StatusOK, response.ResponseSuccess{
 		Success: true,
 		Message: "Login successful!",
-		Data:    loginResp,
+		Data: gin.H{
+			"accessToken": loginResp.AccessToken,
+		},
 	})
 }
 
 // RefreshToken godoc
 // @Summary      Refresh access token
-// @Description  Get new access token using refresh token
+// @Description  Get new access token using refresh token from httpOnly cookie
 // @Tags         auth
-// @Accept       json
 // @Produce      json
-// @Param        refreshToken  body  models.RefreshTokenRequest  true  "Refresh Token"
 // @Success      200  {object}  response.ResponseSuccess{data=object{access_token=string}}
 // @Failure      400  {object}  response.ResponseError
 // @Failure      401  {object}  response.ResponseError
 // @Failure      500  {object}  response.ResponseError
 // @Router       /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(ctx *gin.Context) {
-	var req models.RefreshTokenRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	refreshToken, err := ctx.Cookie("refreshToken")
+	if err != nil {
 		ctx.JSON(http.StatusBadRequest, response.ResponseError{
 			Success: false,
-			Error:   "Please provide refresh token",
+			Error:   "Refresh token not found",
 		})
 		return
+	}
+
+	req := models.RefreshTokenRequest{
+		RefreshToken: refreshToken,
 	}
 
 	accessToken, err := h.authService.RefreshToken(ctx.Request.Context(), &req)
@@ -158,26 +172,28 @@ func (h *AuthHandler) RefreshToken(ctx *gin.Context) {
 
 // Logout godoc
 // @Summary      Logout user
-// @Description  Invalidate refresh token
+// @Description  Invalidate refresh token from httpOnly cookie
 // @Tags         auth
-// @Accept       json
 // @Produce      json
-// @Param        refreshToken  body  models.LogoutRequest  true  "Refresh Token"
 // @Success      200  {object}  response.ResponseSuccess
 // @Failure      400  {object}  response.ResponseError
 // @Failure      500  {object}  response.ResponseError
 // @Router       /auth/logout [post]
 func (h *AuthHandler) Logout(ctx *gin.Context) {
-	var req models.LogoutRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	refreshToken, err := ctx.Cookie("refreshToken")
+	if err != nil {
 		ctx.JSON(http.StatusBadRequest, response.ResponseError{
 			Success: false,
-			Error:   "Please provide refresh token",
+			Error:   "Refresh token not found",
 		})
 		return
 	}
 
-	err := h.authService.Logout(ctx.Request.Context(), &req)
+	req := models.LogoutRequest{
+		RefreshToken: refreshToken,
+	}
+
+	err = h.authService.Logout(ctx.Request.Context(), &req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, response.ResponseError{
 			Success: false,
@@ -185,6 +201,16 @@ func (h *AuthHandler) Logout(ctx *gin.Context) {
 		})
 		return
 	}
+
+	ctx.SetCookie(
+		"refreshToken",
+		"",
+		-1,
+		"/",
+		"",
+		false,
+		true,
+	)
 
 	ctx.JSON(http.StatusOK, response.ResponseSuccess{
 		Success: true,

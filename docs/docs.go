@@ -87,10 +87,7 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
-                "description": "Invalidate refresh token",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Invalidate refresh token from httpOnly cookie",
                 "produces": [
                     "application/json"
                 ],
@@ -98,17 +95,6 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "Logout user",
-                "parameters": [
-                    {
-                        "description": "Refresh Token",
-                        "name": "refreshToken",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.LogoutRequest"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -133,10 +119,7 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Get new access token using refresh token",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Get new access token using refresh token from httpOnly cookie",
                 "produces": [
                     "application/json"
                 ],
@@ -144,17 +127,6 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "Refresh access token",
-                "parameters": [
-                    {
-                        "description": "Refresh Token",
-                        "name": "refreshToken",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.RefreshTokenRequest"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -680,28 +652,6 @@ const docTemplate = `{
                 "accessToken": {
                     "type": "string"
                 },
-                "refreshToken": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.LogoutRequest": {
-            "type": "object",
-            "required": [
-                "refreshToken"
-            ],
-            "properties": {
-                "refreshToken": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.RefreshTokenRequest": {
-            "type": "object",
-            "required": [
-                "refreshToken"
-            ],
-            "properties": {
                 "refreshToken": {
                     "type": "string"
                 }

@@ -6,6 +6,7 @@ import (
 	"backend-koda-shortlink/pkg/response"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -65,11 +66,15 @@ func (h *ShortLinkHandler) CreateShortLink(c *gin.Context) {
 
 // GetAllLinks godoc
 // @Summary      Get all short links
-// @Description  Get all short links created by authenticated user
+// @Description  Get all short links created by authenticated user with filters
 // @Tags         links
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
+// @Param        page     query  int     false  "Page number" default(1)
+// @Param        limit    query  int     false  "Items per page" default(10)
+// @Param        search   query  string  false  "Search query"
+// @Param        status   query  string  false  "Filter by status (active/inactive)"
 // @Success      200  {object}  response.ResponseSuccess
 // @Failure      401  {object}  response.ResponseError
 // @Failure      500  {object}  response.ResponseError
@@ -77,7 +82,24 @@ func (h *ShortLinkHandler) CreateShortLink(c *gin.Context) {
 func (h *ShortLinkHandler) GetAllLinks(c *gin.Context) {
 	userId := c.GetInt("userId")
 
-	links, err := h.service.GetUserLinks(c.Request.Context(), userId)
+	page := 1
+	if p := c.Query("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+
+	limit := 10
+	if l := c.Query("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
+			limit = parsed
+		}
+	}
+
+	search := c.Query("search")
+	status := c.Query("status")
+
+	links, total, err := h.service.GetUserLinksWithFilter(c.Request.Context(), userId, page, limit, search, status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.ResponseError{
 			Success: false,
@@ -86,10 +108,37 @@ func (h *ShortLinkHandler) GetAllLinks(c *gin.Context) {
 		return
 	}
 
+	appURL := os.Getenv("APP_URL")
+	linkResponses := make([]map[string]interface{}, len(links))
+	for i, link := range links {
+		linkResponses[i] = map[string]any{
+			"id":             link.ID,
+			"userId":         link.UserID,
+			"shortCode":      link.ShortCode,
+			"shortUrl":       appURL + link.ShortCode,
+			"originalUrl":    link.OriginalURL,
+			"isActive":       link.IsActive,
+			"clickCount":     link.ClickCount,
+			"lastClicked_at": link.LastClickedAt,
+			"createdAt":      link.CreatedAt,
+			"updatedAt":      link.UpdatedAt,
+			"createdBy":      link.CreatedBy,
+			"updatedBy":      link.UpdatedBy,
+		}
+	}
+
 	c.JSON(http.StatusOK, response.ResponseSuccess{
 		Success: true,
 		Message: "Links retrieved successfully",
-		Data:    links,
+		Data: gin.H{
+			"links": linkResponses,
+			"pagination": gin.H{
+				"page":       page,
+				"limit":      limit,
+				"total":      total,
+				"totalPages": (total + limit - 1) / limit,
+			},
+		},
 	})
 }
 

@@ -8,13 +8,14 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o main ./main.go
+RUN go build -o main .
 
 FROM alpine:latest
 
 WORKDIR /app
 
 COPY --from=builder /app/main .
+COPY --from=builder /app/migrations ./migrations
 
 EXPOSE 8080
 

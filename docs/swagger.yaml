@@ -245,7 +245,26 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get all short links created by authenticated user
+      description: Get all short links created by authenticated user with filters
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search query
+        in: query
+        name: search
+        type: string
+      - description: Filter by status (active/inactive)
+        in: query
+        name: status
+        type: string
       produces:
       - application/json
       responses:
